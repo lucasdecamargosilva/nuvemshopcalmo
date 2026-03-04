@@ -1,4 +1,5 @@
 (function () {
+    console.log("🔥 [Provador IA] Script carregado no navegador! Iniciando configurações...");
     // 1. Injetar Fontes e Ícones Globais
     if (!document.querySelector('link[href*="Outfit"]')) {
         const fontLink = document.createElement('link');
@@ -132,7 +133,9 @@
 
     // 4. Iniciar Funcionalidade (Injetar botão na foto e rodar lógica)
     function initProvadorTools() {
+        console.log("🔥 [Provador IA] Função initProvadorTools disparada!");
         const wrapper = document.getElementById('q-product-wrapper');
+        console.log("🔥 [Provador IA] Elemento '#q-product-wrapper' econtrado?", wrapper);
 
         // Injetar Botão na Foto, se ele agir sobre a imagem
         if (wrapper && !document.getElementById('q-open-ia')) {
@@ -143,6 +146,9 @@
                 </button>
             `;
             wrapper.insertAdjacentHTML('beforeend', btnHtml);
+            console.log("🔥 [Provador IA] Botão 'Provar em Mim' injetado com sucesso na foto do produto!");
+        } else {
+            console.warn("⚠️ [Provador IA] O '#q-product-wrapper' não foi encontrado ou o botão já existe!");
         }
 
         const WEBHOOK_PROVA = 'https://n8n.segredosdodrop.com/webhook/quantic-materialize';
@@ -316,9 +322,14 @@
     }
 
     // Garante que todo o HTML carregou para evitar erros ao buscar o wrapper do botão
+    console.log("🔥 [Provador IA] Lendo o status de carregamento do documento (readyState):", document.readyState);
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initProvadorTools);
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("🔥 [Provador IA] Evento 'DOMContentLoaded' disparado. Chamando initProvadorTools agora...");
+            initProvadorTools();
+        });
     } else {
+        console.log("🔥 [Provador IA] Página já estava carregada. Chamando initProvadorTools direto...");
         initProvadorTools();
     }
 })();
