@@ -45,7 +45,7 @@
         .q-status-msg { display:none; font-size: 12px; color: #ef4444; font-weight: 700; text-align: center; padding: 15px; background: #fef2f2; border-radius: 14px; margin-bottom: 15px; border: 1px solid #fee2e2; }
         .q-loader-ui { display:none; padding: 40px 0; }
         .q-powered-footer { padding: 8px 0 15px 0; display: flex; justify-content: center; align-items: center; gap: 5px;}
-        .q-quantic-logo { height: 14px; opacity: 0.6; }
+        .q-quantic-logo { height: 14px; filter: brightness(0); }
         @keyframes q-slide { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
         /* SELETOR DE FOTOS DO PRODUTO */
