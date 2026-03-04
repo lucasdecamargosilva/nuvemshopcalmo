@@ -47,6 +47,13 @@
         .q-powered-footer { padding: 8px 0 15px 0; display: flex; justify-content: center; align-items: center; gap: 5px;}
         .q-quantic-logo { height: 14px; opacity: 0.6; }
         @keyframes q-slide { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+        /* SELETOR DE FOTOS DO PRODUTO */
+        .q-prod-picker { display: flex; gap: 10px; justify-content: center; margin: 15px 0; }
+        .q-prod-thumb { width: 80px; height: 80px; border-radius: 14px; overflow: hidden; border: 2px solid #e2e8f0; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .q-prod-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .q-prod-thumb:hover { border-color: var(--q-quantic); transform: scale(1.05); }
+        .q-prod-thumb.q-selected { border-color: var(--q-quantic); box-shadow: 0 0 0 3px rgba(139,92,246,0.25); }
     `;
     document.head.appendChild(style);
 
@@ -84,7 +91,10 @@
                             </div>
                         </div>
 
-                        <p style="font-weight: 700; font-size: 14px; color: #475569; margin: 25px 0 10px;">Sua foto deve seguir os requisitos:</p>
+                        <p style="font-weight: 700; font-size: 13px; color: #475569; margin: 20px 0 8px;">Escolha a foto do produto:</p>
+                        <div class="q-prod-picker" id="q-prod-picker"></div>
+
+                        <p style="font-weight: 700; font-size: 14px; color: #475569; margin: 20px 0 10px;">Sua foto deve seguir os requisitos:</p>
                         <div class="q-tips-grid">
                             <div class="q-tip-item"><i class="ph-bold ph-t-shirt"></i> Com roupa</div>
                             <div class="q-tip-item"><i class="ph-bold ph-hand-pointing"></i> Braços soltos</div>
@@ -159,6 +169,36 @@
         const BUY_BTN = document.getElementById('q-add-to-cart-btn');
         let userPhoto = null;
         let recommendedSize = "M";
+        let selectedProductImgUrl = null;
+
+        // Preencher seletor com as 3 primeiras fotos do produto
+        function populateProductPicker() {
+            const picker = document.getElementById('q-prod-picker');
+            if (!picker) return;
+            picker.innerHTML = '';
+            const thumbs = document.querySelectorAll('.js-product-thumb');
+            const max = Math.min(thumbs.length, 3);
+            console.log('🔥 [Provador IA] Miniaturas de produto encontradas:', thumbs.length, '| Exibindo:', max);
+            for (let i = 0; i < max; i++) {
+                const anchor = thumbs[i];
+                const img = anchor.querySelector('img');
+                if (!img) continue;
+                // Pega a versão maior da imagem substituindo sufixos de tamanho
+                const src = (img.dataset.src || img.src || '').replace(/_thumb|_small|_medium/, '_large');
+                const div = document.createElement('div');
+                div.className = 'q-prod-thumb' + (i === 0 ? ' q-selected' : '');
+                div.dataset.src = src;
+                div.innerHTML = `<img src="${src}" alt="Foto ${i + 1}">`;
+                div.onclick = () => {
+                    document.querySelectorAll('.q-prod-thumb').forEach(t => t.classList.remove('q-selected'));
+                    div.classList.add('q-selected');
+                    selectedProductImgUrl = src;
+                    console.log('🔥 [Provador IA] Foto do produto selecionada:', src);
+                };
+                picker.appendChild(div);
+                if (i === 0) selectedProductImgUrl = src; // Seleciona a 1ª por padrão
+            }
+        }
 
         // Fechar botões
         document.getElementById('q-modal-close-btn').onclick = () => document.getElementById('q-modal-ia').style.display = 'none';
@@ -201,6 +241,7 @@
         if (OPEN_BTN) {
             OPEN_BTN.onclick = () => {
                 checkLimit();
+                populateProductPicker();
                 document.getElementById('q-modal-ia').style.display = 'flex';
             };
         }
@@ -244,7 +285,8 @@
 
             const h = document.getElementById('q-h-val').value;
             const w = document.getElementById('q-w-val').value;
-            const prodImg = document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
+            const prodImg = selectedProductImgUrl || document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
+            console.log('🔥 [Provador IA] Foto do produto que será enviada ao webhook:', prodImg);
 
             document.getElementById('q-step-upload').style.display = 'none';
             document.getElementById('q-loading-box').style.display = 'block';
