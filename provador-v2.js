@@ -183,17 +183,36 @@
                 const anchor = thumbs[i];
                 const img = anchor.querySelector('img');
                 if (!img) continue;
-                // Pega a versão maior da imagem substituindo sufixos de tamanho
-                const src = (img.dataset.src || img.src || '').replace(/_thumb|_small|_medium/, '_large');
+
+                // Nuvem Shop usa srcset com padrão "-480-0.webp 480w, -640-0.webp 640w"
+                // A versão maior disponível é "-1024-1024.webp" (igual ao image_url de LS.variants)
+                const srcset = img.getAttribute('srcset') || img.dataset.srcset || '';
+                let src = '';
+                if (srcset) {
+                    // Pega a última entrada do srcset (640w) e faz upgrade para 1024px
+                    const entries = srcset.split(',').map(s => s.trim()).filter(Boolean);
+                    const url640 = entries[entries.length - 1].split(/\s+/)[0];
+                    src = url640.replace(/-\d+-\d+\.webp$/, '-1024-1024.webp');
+                }
+                // Fallback: usa LS.variants[i].image_url ou og:image
+                if (!src) {
+                    src = window.LS?.variants?.[i]?.image_url
+                        || window.LS?.variants?.[0]?.image_url
+                        || document.querySelector('meta[property="og:image"]')?.content
+                        || '';
+                }
+                // Thumb exibido no modal: versão mais leve (640w) para carregamento rápido
+                const thumbSrc = src.replace('-1024-1024.webp', '-640-0.webp') || src;
+
                 const div = document.createElement('div');
                 div.className = 'q-prod-thumb' + (i === 0 ? ' q-selected' : '');
                 div.dataset.src = src;
-                div.innerHTML = `<img src="${src}" alt="Foto ${i + 1}">`;
+                div.innerHTML = `<img src="${thumbSrc}" alt="Foto ${i + 1}">`;
                 div.onclick = () => {
                     document.querySelectorAll('.q-prod-thumb').forEach(t => t.classList.remove('q-selected'));
                     div.classList.add('q-selected');
-                    selectedProductImgUrl = src;
-                    console.log('🔥 [Provador IA] Foto do produto selecionada:', src);
+                    selectedProductImgUrl = src; // 1024px enviada para a IA
+                    console.log('🔥 [Provador IA] Foto selecionada (1024px p/ IA):', src);
                 };
                 picker.appendChild(div);
                 if (i === 0) selectedProductImgUrl = src; // Seleciona a 1ª por padrão
