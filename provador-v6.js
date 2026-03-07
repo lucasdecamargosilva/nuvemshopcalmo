@@ -1,5 +1,6 @@
 (function () {
     console.log("🔥 [Provador IA] Script carregado no navegador! Iniciando configurações...");
+    
     // 1. Injetar Fontes e Ícones Globais
     if (!document.querySelector('link[href*="Outfit"]')) {
         const fontLink = document.createElement('link');
@@ -71,6 +72,7 @@
 
                 <div id="q-step-upload">
                     <div id="q-limit-alert" class="q-status-msg">Você atingiu o limite de 2 testes por dia. Volte amanhã!</div>
+                    <div id="q-block-alert" class="q-status-msg" style="background:#fee2e2; color:#b91c1c;">Provas virtuais indisponíveis nesta loja no momento. (Assinatura Inativa)</div>
 
                     <div id="q-form-container">
                         <div class="q-lead-form">
@@ -263,6 +265,8 @@
                 checkLimit();
                 populateProductPicker();
                 document.getElementById('q-modal-ia').style.display = 'flex';
+                // Reset errors just in case
+                document.getElementById('q-block-alert').style.display = 'none';
             };
         }
 
@@ -302,13 +306,23 @@
 
         GEN_BTN.onclick = async () => {
             if (checkLimit()) return;
+            
+            // 🚨 VALIDAÇÃO API KEY NO FRONT 🚨
+            const apiKey = window.PROVOU_LEVOU_API_KEY;
+            if (!apiKey) {
+                document.getElementById('q-block-alert').innerText = "Erro: API Key não configurada nesta loja.";
+                document.getElementById('q-block-alert').style.display = 'block';
+                return;
+            }
 
             const h = document.getElementById('q-h-val').value;
             const w = document.getElementById('q-w-val').value;
             const prodImg = selectedProductImgUrl || document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
             console.log('🔥 [Provador IA] Foto do produto que será enviada ao webhook:', prodImg);
 
+            // Esconde form, mostra carregamento
             document.getElementById('q-step-upload').style.display = 'none';
+            document.getElementById('q-block-alert').style.display = 'none'; // limpa erros antigos
             document.getElementById('q-loading-box').style.display = 'block';
 
             try {
@@ -319,11 +333,15 @@
                 fd.append('height', h);
                 fd.append('weight', w);
                 fd.append('product_name', document.title);
+                
+                // 👉 ADICIONA A CHAVE NA REQUISIÇÃO
+                fd.append('api_key', apiKey);
 
                 const prodBlob = await fetch(prodImg).then(r => r.blob());
                 fd.append('product_image', prodBlob, 'p.png');
 
                 const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
+                
                 if (res.ok) {
                     incrementLimit();
                     const blob = await res.blob();
@@ -331,10 +349,20 @@
                     calculateFinalSize(h, w);
                     document.getElementById('q-loading-box').style.display = 'none';
                     document.getElementById('q-step-result').style.display = 'flex';
-                } else { throw new Error(); }
+                } else if (res.status === 401 || res.status === 403) {
+                    // Erro retornado pelo n8n indicando permissão negada (chave inválida/expirada)
+                    document.getElementById('q-loading-box').style.display = 'none';
+                    document.getElementById('q-step-upload').style.display = 'block';
+                    document.getElementById('q-block-alert').innerText = "Provas virtuais indisponíveis nesta loja no momento. (Chave inválida)";
+                    document.getElementById('q-block-alert').style.display = 'block';
+                } else {
+                    throw new Error();
+                }
             } catch (e) {
-                alert("Ocorreu um erro. Tente novamente.");
-                location.reload();
+                document.getElementById('q-loading-box').style.display = 'none';
+                document.getElementById('q-step-upload').style.display = 'block';
+                document.getElementById('q-block-alert').innerText = "Ocorreu um erro no servidor. Tente novamente.";
+                document.getElementById('q-block-alert').style.display = 'block';
             }
         };
 
@@ -357,6 +385,7 @@
         }
 
         BUY_BTN.onclick = function () {
+            // ... (mesma coisa, mantive igual)
             const phoneVal = phoneInput.value.replace(/\D/g, '');
             fetch(WEBHOOK_CARRINHO, {
                 method: 'POST',
@@ -383,7 +412,6 @@
         };
     }
 
-    // Garante que todo o HTML carregou para evitar erros ao buscar o wrapper do botão
     console.log("🔥 [Provador IA] Lendo o status de carregamento do documento (readyState):", document.readyState);
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
