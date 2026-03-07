@@ -1,19 +1,11 @@
 (function () {
     console.log("🔥 [Provador IA] Script carregado no navegador! Iniciando configurações...");
 
-    // 0. Extrair a API Key da tag <script> que carregou este arquivo
-    // Buscando especificamente pela tag que carrega o provador-v6.js
-    const meuScript = document.currentScript || document.querySelector('script[src*="provador-v6"]');
-    const extractionKey = meuScript ? meuScript.getAttribute('data-api-key') : null;
-
-    if (extractionKey) {
-        console.log("🔥 [Provador IA] API Key detectada na instalação com sucesso!");
-    } else {
-        console.warn("⚠️ [Provador IA] Nenhuma API Key (data-api-key) encontrada na instalação. As provas virtuais apresentarão erro.");
-    }
-    
-    // Salva globalmente para usarmos na hora de enviar pro Webhook
-    window.PROVOU_LEVOU_API_KEY = extractionKey;
+    // ===============================================
+    // 0. CHUMBAR A API KEY AQUI DIRETO NO CÓDIGO
+    // ===============================================
+    const apiKey = "pl_live_15a24237440a8bf4622abd737a98b3c6fb28a53428db883a89a71795f136c8fb";
+    window.PROVOU_LEVOU_API_KEY = apiKey;
 
     // 1. Injetar Fontes e Ícones Globais
     if (!document.querySelector('link[href*="Outfit"]')) {
@@ -163,7 +155,7 @@
     function initProvadorTools() {
         console.log("🔥 [Provador IA] Função initProvadorTools disparada!");
         const wrapper = document.getElementById('q-product-wrapper');
-        
+
         // Injetar Botão na Foto
         if (wrapper && !document.getElementById('q-open-ia')) {
             const btnHtml = `
@@ -221,7 +213,7 @@
                     selectedProductImgUrl = src;
                 };
                 picker.appendChild(div);
-                if (i === 0) selectedProductImgUrl = src; 
+                if (i === 0) selectedProductImgUrl = src;
             }
         }
 
@@ -305,7 +297,7 @@
 
         GEN_BTN.onclick = async () => {
             if (checkLimit()) return;
-            
+
             // 🚨 VALIDAÇÃO BÁSICA NO FRONT 🚨
             const apiKey = window.PROVOU_LEVOU_API_KEY;
             if (!apiKey) {
@@ -330,7 +322,7 @@
                 fd.append('height', h);
                 fd.append('weight', w);
                 fd.append('product_name', document.title);
-                
+
                 // 👉 A MÁGICA: INJETA A CHAVE NO FORM DATA PRO N8N LER
                 fd.append('api_key', apiKey);
 
@@ -338,7 +330,7 @@
                 fd.append('product_image', prodBlob, 'p.png');
 
                 const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
-                
+
                 if (res.ok) {
                     incrementLimit();
                     const blob = await res.blob();
