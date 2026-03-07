@@ -1,6 +1,20 @@
 (function () {
     console.log("🔥 [Provador IA] Script carregado no navegador! Iniciando configurações...");
+
+    // 0. Extrair a API Key da tag <script> que carregou este arquivo
+    // Buscando especificamente pela tag que carrega o provador-v6.js
+    const meuScript = document.currentScript || document.querySelector('script[src*="provador-v6"]');
+    const extractionKey = meuScript ? meuScript.getAttribute('data-api-key') : null;
+
+    if (extractionKey) {
+        console.log("🔥 [Provador IA] API Key detectada na instalação com sucesso!");
+    } else {
+        console.warn("⚠️ [Provador IA] Nenhuma API Key (data-api-key) encontrada na instalação. As provas virtuais apresentarão erro.");
+    }
     
+    // Salva globalmente para usarmos na hora de enviar pro Webhook
+    window.PROVOU_LEVOU_API_KEY = extractionKey;
+
     // 1. Injetar Fontes e Ícones Globais
     if (!document.querySelector('link[href*="Outfit"]')) {
         const fontLink = document.createElement('link');
@@ -72,7 +86,8 @@
 
                 <div id="q-step-upload">
                     <div id="q-limit-alert" class="q-status-msg">Você atingiu o limite de 2 testes por dia. Volte amanhã!</div>
-                    <div id="q-block-alert" class="q-status-msg" style="background:#fee2e2; color:#b91c1c;">Provas virtuais indisponíveis nesta loja no momento. (Assinatura Inativa)</div>
+                    <!-- ALERTA DE CHAVE/BLOQUEIO ADICIONADO AQUI -->
+                    <div id="q-block-alert" class="q-status-msg" style="background:#fee2e2; color:#b91c1c;">Provas virtuais indisponíveis nesta loja no momento.</div>
 
                     <div id="q-form-container">
                         <div class="q-lead-form">
@@ -148,9 +163,8 @@
     function initProvadorTools() {
         console.log("🔥 [Provador IA] Função initProvadorTools disparada!");
         const wrapper = document.getElementById('q-product-wrapper');
-        console.log("🔥 [Provador IA] Elemento '#q-product-wrapper' econtrado?", wrapper);
-
-        // Injetar Botão na Foto, se ele agir sobre a imagem
+        
+        // Injetar Botão na Foto
         if (wrapper && !document.getElementById('q-open-ia')) {
             const btnHtml = `
                 <button type="button" id="q-open-ia" class="q-btn-trigger-ia q-animate-attention">
@@ -159,9 +173,6 @@
                 </button>
             `;
             wrapper.insertAdjacentHTML('beforeend', btnHtml);
-            console.log("🔥 [Provador IA] Botão 'Provar em Mim' injetado com sucesso na foto do produto!");
-        } else {
-            console.warn("⚠️ [Provador IA] O '#q-product-wrapper' não foi encontrado ou o botão já existe!");
         }
 
         const WEBHOOK_PROVA = 'https://n8n.segredosdodrop.com/webhook/quantic-materialize';
@@ -174,37 +185,30 @@
         let recommendedSize = "M";
         let selectedProductImgUrl = null;
 
-        // Preencher seletor com as 3 primeiras fotos do produto
         function populateProductPicker() {
             const picker = document.getElementById('q-prod-picker');
             if (!picker) return;
             picker.innerHTML = '';
             const thumbs = document.querySelectorAll('.js-product-thumb');
             const max = Math.min(thumbs.length, 3);
-            console.log('🔥 [Provador IA] Miniaturas de produto encontradas:', thumbs.length, '| Exibindo:', max);
             for (let i = 0; i < max; i++) {
                 const anchor = thumbs[i];
                 const img = anchor.querySelector('img');
                 if (!img) continue;
 
-                // Nuvem Shop usa srcset com padrão "-480-0.webp 480w, -640-0.webp 640w"
-                // A versão maior disponível é "-1024-1024.webp" (igual ao image_url de LS.variants)
                 const srcset = img.getAttribute('srcset') || img.dataset.srcset || '';
                 let src = '';
                 if (srcset) {
-                    // Pega a última entrada do srcset (640w) e faz upgrade para 1024px
                     const entries = srcset.split(',').map(s => s.trim()).filter(Boolean);
                     const url640 = entries[entries.length - 1].split(/\s+/)[0];
                     src = url640.replace(/-\d+-\d+\.webp$/, '-1024-1024.webp');
                 }
-                // Fallback: usa LS.variants[i].image_url ou og:image
                 if (!src) {
                     src = window.LS?.variants?.[i]?.image_url
                         || window.LS?.variants?.[0]?.image_url
                         || document.querySelector('meta[property="og:image"]')?.content
                         || '';
                 }
-                // Thumb exibido no modal: versão mais leve (640w) para carregamento rápido
                 const thumbSrc = src.replace('-1024-1024.webp', '-640-0.webp') || src;
 
                 const div = document.createElement('div');
@@ -214,19 +218,15 @@
                 div.onclick = () => {
                     document.querySelectorAll('.q-prod-thumb').forEach(t => t.classList.remove('q-selected'));
                     div.classList.add('q-selected');
-                    selectedProductImgUrl = src; // 1024px enviada para a IA
-                    console.log('🔥 [Provador IA] Foto selecionada (1024px p/ IA):', src);
+                    selectedProductImgUrl = src;
                 };
                 picker.appendChild(div);
-                if (i === 0) selectedProductImgUrl = src; // Seleciona a 1ª por padrão
+                if (i === 0) selectedProductImgUrl = src; 
             }
         }
 
-        // Fechar botões
         document.getElementById('q-modal-close-btn').onclick = () => document.getElementById('q-modal-ia').style.display = 'none';
         document.getElementById('q-return-product').onclick = () => location.reload();
-
-        // Area de upload clicável
         document.getElementById('q-upload-area').onclick = () => document.getElementById('q-real-input').click();
 
         function checkLimit() {
@@ -238,7 +238,7 @@
                     const parsed = JSON.parse(stored);
                     if (parsed.date === today) usage = parsed;
                 }
-            } catch (e) { console.error("Limit check error"); }
+            } catch (e) { }
 
             const isOver = usage.count >= 2;
             document.getElementById('q-limit-alert').style.display = isOver ? 'block' : 'none';
@@ -265,7 +265,6 @@
                 checkLimit();
                 populateProductPicker();
                 document.getElementById('q-modal-ia').style.display = 'flex';
-                // Reset errors just in case
                 document.getElementById('q-block-alert').style.display = 'none';
             };
         }
@@ -307,10 +306,10 @@
         GEN_BTN.onclick = async () => {
             if (checkLimit()) return;
             
-            // 🚨 VALIDAÇÃO API KEY NO FRONT 🚨
+            // 🚨 VALIDAÇÃO BÁSICA NO FRONT 🚨
             const apiKey = window.PROVOU_LEVOU_API_KEY;
             if (!apiKey) {
-                document.getElementById('q-block-alert').innerText = "Erro: API Key não configurada nesta loja.";
+                document.getElementById('q-block-alert').innerText = "Erro: API Key não detectada. Instalação incorreta ou desatualizada na sua Tag.";
                 document.getElementById('q-block-alert').style.display = 'block';
                 return;
             }
@@ -318,11 +317,9 @@
             const h = document.getElementById('q-h-val').value;
             const w = document.getElementById('q-w-val').value;
             const prodImg = selectedProductImgUrl || document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
-            console.log('🔥 [Provador IA] Foto do produto que será enviada ao webhook:', prodImg);
 
-            // Esconde form, mostra carregamento
             document.getElementById('q-step-upload').style.display = 'none';
-            document.getElementById('q-block-alert').style.display = 'none'; // limpa erros antigos
+            document.getElementById('q-block-alert').style.display = 'none';
             document.getElementById('q-loading-box').style.display = 'block';
 
             try {
@@ -334,7 +331,7 @@
                 fd.append('weight', w);
                 fd.append('product_name', document.title);
                 
-                // 👉 ADICIONA A CHAVE NA REQUISIÇÃO
+                // 👉 A MÁGICA: INJETA A CHAVE NO FORM DATA PRO N8N LER
                 fd.append('api_key', apiKey);
 
                 const prodBlob = await fetch(prodImg).then(r => r.blob());
@@ -350,7 +347,7 @@
                     document.getElementById('q-loading-box').style.display = 'none';
                     document.getElementById('q-step-result').style.display = 'flex';
                 } else if (res.status === 401 || res.status === 403) {
-                    // Erro retornado pelo n8n indicando permissão negada (chave inválida/expirada)
+                    // Resposta do n8n bloqueando
                     document.getElementById('q-loading-box').style.display = 'none';
                     document.getElementById('q-step-upload').style.display = 'block';
                     document.getElementById('q-block-alert').innerText = "Provas virtuais indisponíveis nesta loja no momento. (Chave inválida)";
@@ -361,7 +358,7 @@
             } catch (e) {
                 document.getElementById('q-loading-box').style.display = 'none';
                 document.getElementById('q-step-upload').style.display = 'block';
-                document.getElementById('q-block-alert').innerText = "Ocorreu um erro no servidor. Tente novamente.";
+                document.getElementById('q-block-alert').innerText = "Ocorreu um erro de comunicação ou servidor ocupado. Tente novamente.";
                 document.getElementById('q-block-alert').style.display = 'block';
             }
         };
@@ -385,7 +382,6 @@
         }
 
         BUY_BTN.onclick = function () {
-            // ... (mesma coisa, mantive igual)
             const phoneVal = phoneInput.value.replace(/\D/g, '');
             fetch(WEBHOOK_CARRINHO, {
                 method: 'POST',
@@ -412,14 +408,9 @@
         };
     }
 
-    console.log("🔥 [Provador IA] Lendo o status de carregamento do documento (readyState):", document.readyState);
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log("🔥 [Provador IA] Evento 'DOMContentLoaded' disparado. Chamando initProvadorTools agora...");
-            initProvadorTools();
-        });
+        document.addEventListener('DOMContentLoaded', initProvadorTools);
     } else {
-        console.log("🔥 [Provador IA] Página já estava carregada. Chamando initProvadorTools direto...");
         initProvadorTools();
     }
 })();
