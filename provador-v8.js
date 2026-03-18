@@ -355,19 +355,65 @@
             }
         };
 
+        // ===============================================
+        // TABELAS DE MEDIDAS CALMÔ (Ref: modelo 186cm / 78kg = M / 40)
+        // ===============================================
+        // OVERSIZED:     P(75/54/24) M(76/57/28) G(78/59/30) GG(79/64/32)
+        // SLIM:          P(72/45/21) M(74/47/22) G(77/49/23) GG(79/51/24)
+        // JEANS BALÃO:   38(103/38/21) 40(104/40/22) 42(105/42/23) 44(106/44/23) 46(107/46/24) 48(108/48/25)
+        // CARGO JEANS:   P(103/38/24) M(104/40/25) G(105/42/26) GG(106/44/27)
+        // CALÇA:         P(98/35.5) M(99/37) G(101/41) GG(102/44)
+        // ===============================================
         function calculateFinalSize(h, w) {
             let hInt = parseFloat(h.toString().replace(',', '.'));
             let wInt = parseFloat(w.toString().replace(',', '.'));
             if (hInt < 3) hInt = hInt * 100;
             const name = document.title.toLowerCase();
             let size = "M";
+
+            // Score combinado: peso (70%) + altura (10%) — calibrado para 186cm/78kg = 73.2
+            const score = (wInt * 0.7) + (hInt * 0.1);
+
             if (name.includes("oversized")) {
-                let sH = hInt < 178 ? 1 : hInt < 190 ? 2 : hInt < 196 ? 3 : 4;
-                let sW = wInt < 78 ? 1 : wInt < 90 ? 2 : wInt < 102 ? 3 : 4;
-                size = ["P", "M", "G", "GG"][Math.max(sH, sW) - 1];
+                // Fit generoso — thresholds mais altos
+                if (score <= 67) size = "P";
+                else if (score <= 78) size = "M";
+                else if (score <= 88) size = "G";
+                else size = "GG";
+            } else if (name.includes("slim")) {
+                // Fit justo — thresholds mais baixos
+                if (score <= 64) size = "P";
+                else if (score <= 75) size = "M";
+                else if (score <= 85) size = "G";
+                else size = "GG";
             } else if (name.includes("balão") || name.includes("balao")) {
-                size = (wInt < 65 ? 38 : wInt < 72 ? 40 : wInt < 82 ? 42 : wInt < 90 ? 44 : wInt < 98 ? 46 : 48).toString();
+                // Jeans Balão — tamanhos numéricos 38-48
+                if (score <= 66) size = "38";
+                else if (score <= 74) size = "40";
+                else if (score <= 82) size = "42";
+                else if (score <= 89) size = "44";
+                else if (score <= 96) size = "46";
+                else size = "48";
+            } else if (name.includes("cargo")) {
+                // Cargo Jeans — cintura 38/40/42/44
+                if (score <= 67) size = "P";
+                else if (score <= 77) size = "M";
+                else if (score <= 87) size = "G";
+                else size = "GG";
+            } else if (name.includes("calça") || name.includes("calca") || name.includes("jogger") || name.includes("moletom")) {
+                // Calça genérica — cintura 35.5/37/41/44
+                if (score <= 65) size = "P";
+                else if (score <= 76) size = "M";
+                else if (score <= 86) size = "G";
+                else size = "GG";
+            } else {
+                // Default: lógica oversized (produto mais comum)
+                if (score <= 67) size = "P";
+                else if (score <= 78) size = "M";
+                else if (score <= 88) size = "G";
+                else size = "GG";
             }
+
             recommendedSize = size;
             document.getElementById('q-res-letter').innerText = size;
             document.getElementById('q-btn-size-text').innerText = size;
