@@ -120,6 +120,10 @@
                                 <img id="q-pre-img" style="width:100%; height:100%; object-fit:cover;">
                             </div>
                         </div>
+                        <label style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;cursor:pointer;font-size:11px;line-height:1.4;color:#64748b;">
+                            <input type="checkbox" id="q-accept-terms" style="cursor:pointer;accent-color:#000;">
+                            Ao continuar, concordo com os <a href="http://provoulevou.com.br/termos.html" target="_blank" style="color:#8b5cf6;text-decoration:underline;">Termos e Condi\u00e7\u00f5es</a>
+                        </label>
                         <button class="q-btn-black" id="q-btn-generate" disabled>MATERIALIZAR LOOK</button>
                     </div>
                 </div>
@@ -277,10 +281,11 @@
             document.getElementById('q-phone-error').style.display = (phone.length > 0 && !isPhoneValid) ? 'block' : 'none';
 
             const over = checkLimit();
-            GEN_BTN.disabled = !(isPhoneValid && h && w && userPhoto && !over);
+            GEN_BTN.disabled = !(isPhoneValid && h && w && userPhoto && !over && document.getElementById('q-accept-terms').checked);
         }
 
         ['q-h-val', 'q-w-val'].forEach(id => document.getElementById(id).oninput = validateForm);
+        document.getElementById('q-accept-terms').onchange = validateForm;
 
         document.getElementById('q-real-input').onchange = (e) => {
             userPhoto = e.target.files[0];
