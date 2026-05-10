@@ -147,9 +147,9 @@
                 </div>
             </div>
 
-            <a href="https://provoulevou.com.br" target="_blank" class="q-powered-footer" style="text-decoration:none;">
+            <a href="https://provoulevou.com.br/?utm_source=widget&utm_medium=parceiro&utm_campaign=calmo" target="_blank" rel="dofollow noopener" class="q-powered-footer" style="text-decoration:none;">
                 <span style="font-size:11px; color:#94a3b8;">powered by</span>
-                <img src="https://provoulevou.com.br/assets/provoulevou-logo.png" class="q-quantic-logo">
+                <img src="https://provoulevou.com.br/assets/provoulevou-logo.png" class="q-quantic-logo" alt="Provou Levou - Provador Virtual com IA">
             </a>
         </div>
     `;
