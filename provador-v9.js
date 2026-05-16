@@ -349,64 +349,85 @@
         };
 
         GEN_BTN.onclick = async () => {
-            if (checkLimit()) return;
 
-            // 🚨 VALIDAÇÃO BÁSICA NO FRONT 🚨
-            const apiKey = window.PROVOU_LEVOU_API_KEY;
-            if (!apiKey) {
-                document.getElementById('q-block-alert').innerText = "Erro: API Key não detectada. Instalação incorreta ou desatualizada na sua Tag.";
-                document.getElementById('q-block-alert').style.display = 'block';
-                return;
-            }
 
-            const h = document.getElementById('q-h-val').value;
-            const w = document.getElementById('q-w-val').value;
-            const prodImg = selectedProductImgUrl || document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
+            if (window._provouLevouBusy) return;
 
-            document.getElementById('q-step-upload').style.display = 'none';
-            document.getElementById('q-block-alert').style.display = 'none';
-            document.getElementById('q-loading-box').style.display = 'block';
+
+            window._provouLevouBusy = true;
+
 
             try {
-                const phoneVal = phoneInput.value.replace(/\D/g, '');
-                const fd = new FormData();
-                fd.append('person_image', userPhoto);
-                fd.append('whatsapp', '55' + phoneVal);
-                fd.append('height', h);
-                fd.append('weight', w);
-                fd.append('product_name', document.title);
+                if (checkLimit()) return;
 
-                // 👉 A MÁGICA: INJETA A CHAVE NO FORM DATA PRO N8N LER
-                fd.append('api_key', apiKey);
+                // 🚨 VALIDAÇÃO BÁSICA NO FRONT 🚨
+                const apiKey = window.PROVOU_LEVOU_API_KEY;
+                if (!apiKey) {
+                    document.getElementById('q-block-alert').innerText = "Erro: API Key não detectada. Instalação incorreta ou desatualizada na sua Tag.";
+                    document.getElementById('q-block-alert').style.display = 'block';
+                    return;
+                }
 
-                const prodBlob = await fetch(prodImg).then(r => r.blob());
-                fd.append('product_image', prodBlob, 'p.png');
+                const h = document.getElementById('q-h-val').value;
+                const w = document.getElementById('q-w-val').value;
+                const prodImg = selectedProductImgUrl || document.querySelector('meta[property="og:image"]')?.content || document.querySelector('.js-product-image img')?.src;
 
-                const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
+                document.getElementById('q-step-upload').style.display = 'none';
+                document.getElementById('q-block-alert').style.display = 'none';
+                document.getElementById('q-loading-box').style.display = 'block';
 
-                if (res.ok) {
-                    incrementLimit();
-                    const blob = await res.blob();
-                    document.getElementById('q-final-view-img').src = URL.createObjectURL(blob);
-                    calculateFinalSize(h, w);
-                    document.getElementById('q-loading-box').style.display = 'none';
-                    document.getElementById('q-step-result').style.display = 'flex';
-                } else if (res.status === 401 || res.status === 403) {
-                    // Resposta do n8n bloqueando
+                try {
+                    const phoneVal = phoneInput.value.replace(/\D/g, '');
+                    const fd = new FormData();
+                    fd.append('person_image', userPhoto);
+                    fd.append('whatsapp', '55' + phoneVal);
+                    fd.append('height', h);
+                    fd.append('weight', w);
+                    fd.append('product_name', document.title);
+
+                    // 👉 A MÁGICA: INJETA A CHAVE NO FORM DATA PRO N8N LER
+                    fd.append('api_key', apiKey);
+
+                    const prodBlob = await fetch(prodImg).then(r => r.blob());
+                    fd.append('product_image', prodBlob, 'p.png');
+
+                    const res = await fetch(WEBHOOK_PROVA, { method: 'POST', body: fd });
+
+                    if (res.ok) {
+                        incrementLimit();
+                        const blob = await res.blob();
+                        document.getElementById('q-final-view-img').src = URL.createObjectURL(blob);
+                        calculateFinalSize(h, w);
+                        document.getElementById('q-loading-box').style.display = 'none';
+                        document.getElementById('q-step-result').style.display = 'flex';
+                    } else if (res.status === 401 || res.status === 403) {
+                        // Resposta do n8n bloqueando
+                        document.getElementById('q-loading-box').style.display = 'none';
+                        document.getElementById('q-step-upload').style.display = 'block';
+                        document.getElementById('q-block-alert').innerText = "Provas virtuais indisponíveis nesta loja no momento. (Chave inválida)";
+                        document.getElementById('q-block-alert').style.display = 'block';
+                    } else {
+                        throw new Error();
+                    }
+                } catch (e) {
                     document.getElementById('q-loading-box').style.display = 'none';
                     document.getElementById('q-step-upload').style.display = 'block';
-                    document.getElementById('q-block-alert').innerText = "Provas virtuais indisponíveis nesta loja no momento. (Chave inválida)";
+                    document.getElementById('q-block-alert').innerText = "Ocorreu um erro de comunicação ou servidor ocupado. Tente novamente.";
                     document.getElementById('q-block-alert').style.display = 'block';
-                } else {
-                    throw new Error();
                 }
-            } catch (e) {
-                document.getElementById('q-loading-box').style.display = 'none';
-                document.getElementById('q-step-upload').style.display = 'block';
-                document.getElementById('q-block-alert').innerText = "Ocorreu um erro de comunicação ou servidor ocupado. Tente novamente.";
-                document.getElementById('q-block-alert').style.display = 'block';
-            }
-        };
+        
+
+
+            } finally {
+
+
+                window._provouLevouBusy = false;
+
+
+            }}
+
+
+        ;
 
         // ===============================================
         // TABELAS DE MEDIDAS CALMÔ (Ref: modelo 186cm / 78kg = M / 40)
