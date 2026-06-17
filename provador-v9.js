@@ -71,6 +71,8 @@
     // 2. Injetar o CSS
     const style = document.createElement('style');
     style.innerHTML = `
+/* PL: borda arredondada do modal */@media(min-width:768px){.q-card-ia,.q-card,#q-card-ia,#q-card,.q-modal-card{border-radius:16px !important;overflow:hidden;}}
+
         :root { --q-quantic: #8b5cf6; --q-quantic-dark: #7c3aed; }
         .q-btn-trigger-ia { position: absolute; top: 15px; right: 20px; z-index: 10; background: linear-gradient(135deg, var(--q-quantic) 0%, var(--q-quantic-dark) 100%); color: #ffffff; border: 2px solid rgba(255,255,255,0.3); padding: 8px 18px; border-radius: 50px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); overflow: hidden; }
         .q-btn-trigger-ia i { font-size: 16px; }
